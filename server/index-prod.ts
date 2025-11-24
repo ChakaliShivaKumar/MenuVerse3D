@@ -3,6 +3,11 @@ import path from "node:path";
 import { type Server } from "node:http";
 
 import express, { type Express } from "express";
+import { config } from "dotenv";
+
+// Load environment variables from .env.local
+config({ path: path.resolve(import.meta.dirname, "..", ".env.local") });
+
 import runApp from "./app";
 
 export async function serveStatic(app: Express, _server: Server) {

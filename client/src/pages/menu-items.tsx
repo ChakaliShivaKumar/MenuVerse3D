@@ -1,5 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
 import { MenuItem, InsertMenuItem, insertMenuItemSchema, Restaurant, Category, GenerationJob } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Pencil, Trash2, Upload, X, Sparkles, Eye } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, X, Sparkles, Eye, Search, Filter, Loader2, CheckCircle2, AlertCircle, Image as ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,14 +20,30 @@ import { Progress } from "@/components/ui/progress";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
 
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'model-viewer': any;
+    }
+  }
+}
+
 export default function MenuItems() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [is3DDialogOpen, setIs3DDialogOpen] = useState(false);
+  const [is3DViewerOpen, setIs3DViewerOpen] = useState(false);
+  const [selected3DModel, setSelected3DModel] = useState<string | null>(null);
+  const [selectedItemName, setSelectedItemName] = useState<string>("");
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
-  const [uploadedImages, setUploadedImages] = useState<File[]>([]);
+  const [uploadedImage, setUploadedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [restaurantFilter, setRestaurantFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [availabilityFilter, setAvailabilityFilter] = useState<string>("all");
+  const [status3DFilter, setStatus3DFilter] = useState<string>("all");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const multiFileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -45,7 +62,12 @@ export default function MenuItems() {
 
   const { data: generationJobs } = useQuery<GenerationJob[]>({
     queryKey: ["/api/generation-jobs"],
-    refetchInterval: 5000, // Poll every 5 seconds for status updates
+    refetchInterval: (query) => {
+      // Only poll if there are jobs in processing state
+      const jobs = query.state.data || [];
+      const hasProcessingJobs = jobs.some(job => job.status === "processing" || job.status === "pending");
+      return hasProcessingJobs ? 30000 : false; // Poll every 30 seconds if processing
+    },
   });
 
   const form = useForm<InsertMenuItem>({
@@ -112,30 +134,63 @@ export default function MenuItems() {
   });
 
   const generate3DMutation = useMutation({
-    mutationFn: async (data: { menuItemId: string; images: File[] }) => {
+    mutationFn: async (data: { menuItemId: string; image: File }) => {
       const formData = new FormData();
       formData.append("menuItemId", data.menuItemId);
-      data.images.forEach((img) => formData.append("images", img));
+      formData.append("image", data.image, data.image.name);
 
       const response = await fetch("/api/generate-3d", {
         method: "POST",
         body: formData,
+        // Don't set Content-Type header - let browser set it with boundary
       });
 
       if (!response.ok) {
-        throw new Error("Failed to generate 3D model");
+        const errorData = await response.json().catch(() => ({ message: "Failed to generate 3D model" }));
+        throw new Error(errorData.message || "Failed to generate 3D model");
       }
 
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (job) => {
       queryClient.invalidateQueries({ queryKey: ["/api/generation-jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/menu-items"] });
       setIs3DDialogOpen(false);
-      setUploadedImages([]);
+      setUploadedImage(null);
       toast({
         title: "3D Generation Started",
         description: "Your 3D model is being generated. This may take a few minutes.",
       });
+      
+      // Poll for completion
+      const pollInterval = setInterval(async () => {
+        try {
+          const updatedJob = await fetch(`/api/generation-jobs/${job.id}`).then(r => r.json());
+          
+          if (updatedJob.status === "completed") {
+            clearInterval(pollInterval);
+            queryClient.invalidateQueries({ queryKey: ["/api/generation-jobs"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/menu-items"] });
+            toast({
+              title: "3D Model Generated!",
+              description: "Your 3D model is now available. Click 'View 3D Model' to see it.",
+            });
+          } else if (updatedJob.status === "failed") {
+            clearInterval(pollInterval);
+            queryClient.invalidateQueries({ queryKey: ["/api/generation-jobs"] });
+            toast({
+              title: "Generation Failed",
+              description: updatedJob.error || "3D model generation failed.",
+              variant: "destructive",
+            });
+          }
+        } catch (error) {
+          console.error("Error polling generation status:", error);
+        }
+      }, 30000); // Poll every 30 seconds
+      
+      // Clear interval after 5 minutes to avoid infinite polling
+      setTimeout(() => clearInterval(pollInterval), 5 * 60 * 1000);
     },
     onError: () => {
       toast({
@@ -157,21 +212,15 @@ export default function MenuItems() {
     }
   };
 
-  const handleMultiImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length + uploadedImages.length > 5) {
-      toast({
-        title: "Too many images",
-        description: "You can upload up to 5 images for 3D generation.",
-        variant: "destructive",
-      });
-      return;
+  const handleImageUploadFor3D = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadedImage(file);
     }
-    setUploadedImages([...uploadedImages, ...files]);
   };
 
-  const removeImage = (index: number) => {
-    setUploadedImages(uploadedImages.filter((_, i) => i !== index));
+  const removeImage = () => {
+    setUploadedImage(null);
   };
 
   const handleEdit = (item: MenuItem) => {
@@ -190,6 +239,12 @@ export default function MenuItems() {
 
   const getJobForItem = (itemId: string): GenerationJob | undefined => {
     return generationJobs?.find((job) => job.menuItemId === itemId);
+  };
+
+  const view3DModel = (modelUrl: string, itemName: string) => {
+    setSelected3DModel(modelUrl);
+    setSelectedItemName(itemName);
+    setIs3DViewerOpen(true);
   };
 
   const getStatusBadge = (status: string) => {
@@ -211,6 +266,90 @@ export default function MenuItems() {
     return restaurants?.find((r) => r.id === restaurantId)?.name || "Unknown";
   };
 
+  // Get 3D status for an item
+  const get3DStatus = (item: MenuItem): "none" | "processing" | "ready" | "failed" => {
+    const job = getJobForItem(item.id);
+    if (job) {
+      if (job.status === "completed" && job.modelUrl) return "ready";
+      if (job.status === "processing" || job.status === "pending") return "processing";
+      if (job.status === "failed") return "failed";
+    }
+    // Check if item has model3D data
+    const model3D = (item as any)?.model3D;
+    if (model3D?.modelUrl) return "ready";
+    return "none";
+  };
+
+  // Filter menu items
+  const filteredMenuItems = useMemo(() => {
+    if (!menuItems) return [];
+    
+    return menuItems.filter((item) => {
+      // Search filter
+      const matchesSearch = 
+        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Restaurant filter
+      const matchesRestaurant = restaurantFilter === "all" || item.restaurantId === restaurantFilter;
+      
+      // Category filter
+      const matchesCategory = categoryFilter === "all" || item.categoryId === categoryFilter;
+      
+      // Availability filter
+      const matchesAvailability = 
+        availabilityFilter === "all" || 
+        (availabilityFilter === "available" && item.available) ||
+        (availabilityFilter === "unavailable" && !item.available);
+      
+      // 3D Status filter
+      const item3DStatus = get3DStatus(item);
+      const matches3DStatus = 
+        status3DFilter === "all" ||
+        (status3DFilter === "none" && item3DStatus === "none") ||
+        (status3DFilter === "processing" && item3DStatus === "processing") ||
+        (status3DFilter === "ready" && item3DStatus === "ready");
+      
+      return matchesSearch && matchesRestaurant && matchesCategory && matchesAvailability && matches3DStatus;
+    });
+  }, [menuItems, searchQuery, restaurantFilter, categoryFilter, availabilityFilter, status3DFilter, generationJobs]);
+
+  // Get 3D Status Badge Component
+  const get3DStatusBadge = (item: MenuItem) => {
+    const status = get3DStatus(item);
+    const job = getJobForItem(item.id);
+    
+    switch (status) {
+      case "ready":
+        return (
+          <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20">
+            <CheckCircle2 className="h-3 w-3 mr-1" />
+            3D Ready
+          </Badge>
+        );
+      case "processing":
+        return (
+          <Badge className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20">
+            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+            Processing...
+          </Badge>
+        );
+      case "failed":
+        return (
+          <Badge className="bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20">
+            <AlertCircle className="h-3 w-3 mr-1" />
+            Failed
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="outline" className="bg-muted">
+            No 3D
+          </Badge>
+        );
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="p-4 md:p-8">
@@ -229,14 +368,22 @@ export default function MenuItems() {
   }
 
   return (
-    <div className="p-4 md:p-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-        <h1 className="text-3xl md:text-4xl font-display font-bold" data-testid="text-menu-items-title">
-          Menu Items
-        </h1>
+    <div className="p-4 md:p-8 space-y-6">
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+      >
+        <div>
+          <h1 className="text-3xl md:text-4xl font-display font-bold" data-testid="text-menu-items-title">
+            Menu Items
+          </h1>
+          <p className="text-muted-foreground mt-1">Manage your menu items and 3D models</p>
+        </div>
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
-            <Button data-testid="button-create-menu-item">
+            <Button data-testid="button-create-menu-item" className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               Add Menu Item
             </Button>
@@ -411,7 +558,71 @@ export default function MenuItems() {
             </Form>
           </DialogContent>
         </Dialog>
-      </div>
+      </motion.div>
+
+      {/* Search and Filters */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.1 }}
+        className="space-y-4"
+      >
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by name or description..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Select value={restaurantFilter} onValueChange={setRestaurantFilter}>
+            <SelectTrigger>
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Restaurant" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Restaurants</SelectItem>
+              {restaurants?.map((r) => (
+                <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {categories?.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={availabilityFilter} onValueChange={setAvailabilityFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="Availability" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="available">Available</SelectItem>
+              <SelectItem value="unavailable">Unavailable</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={status3DFilter} onValueChange={setStatus3DFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="3D Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="none">No 3D</SelectItem>
+              <SelectItem value="processing">Processing</SelectItem>
+              <SelectItem value="ready">3D Ready</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </motion.div>
 
       {menuItems && menuItems.length === 0 ? (
         <Card>
@@ -422,77 +633,129 @@ export default function MenuItems() {
             </CardDescription>
           </CardHeader>
         </Card>
+      ) : filteredMenuItems.length === 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>No menu items found</CardTitle>
+            <CardDescription>
+              Try adjusting your search or filter criteria
+            </CardDescription>
+          </CardHeader>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          {menuItems?.sort((a, b) => a.displayOrder - b.displayOrder).map((item) => {
-            const job = getJobForItem(item.id);
-            return (
-              <Card key={item.id} className="hover-elevate overflow-hidden" data-testid={`card-menu-item-${item.id}`}>
-                {item.image && (
-                  <div className="aspect-video w-full overflow-hidden">
-                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                  </div>
-                )}
-                <CardHeader>
-                  <CardTitle className="flex items-start justify-between gap-2">
-                    <span className="line-clamp-1">{item.name}</span>
-                    <span className="text-lg font-bold text-primary">
-                      ${item.price}
-                    </span>
-                  </CardTitle>
-                  {item.description && (
-                    <CardDescription className="line-clamp-2">
-                      {item.description}
-                    </CardDescription>
-                  )}
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex flex-wrap gap-2 text-sm">
-                    <Badge variant="outline">{getCategoryName(item.categoryId)}</Badge>
-                    <Badge variant={item.available ? "default" : "secondary"}>
-                      {item.available ? "Available" : "Unavailable"}
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {getRestaurantName(item.restaurantId)}
-                  </p>
-                  {job && (
-                    <div className="pt-2 space-y-1">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">3D Model:</span>
-                        {getStatusBadge(job.status)}
+          <AnimatePresence mode="popLayout">
+            {filteredMenuItems.sort((a, b) => a.displayOrder - b.displayOrder).map((item, index) => {
+              const job = getJobForItem(item.id);
+              const item3DStatus = get3DStatus(item);
+              const model3D = (item as any)?.model3D;
+              return (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  whileHover={{ y: -4 }}
+                >
+                  <Card 
+                    className="hover-elevate overflow-hidden border-2 hover:border-primary/20 transition-all duration-300 bg-card/50 backdrop-blur-sm h-full" 
+                    data-testid={`card-menu-item-${item.id}`}
+                  >
+                    {item.image ? (
+                      <div className="aspect-video w-full overflow-hidden bg-gradient-to-br from-primary/10 to-primary/5">
+                        <img src={item.image} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 hover:scale-110" />
                       </div>
-                      {job.status === "processing" && (
-                        <Progress value={job.progress || 0} className="h-1" />
+                    ) : (
+                      <div className="aspect-video w-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
+                        <ImageIcon className="h-12 w-12 text-muted-foreground/50" />
+                      </div>
+                    )}
+                    <CardHeader>
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <CardTitle className="line-clamp-2 flex-1">{item.name}</CardTitle>
+                        <span className="text-lg font-bold text-primary whitespace-nowrap">
+                          ${item.price}
+                        </span>
+                      </div>
+                      {item.description && (
+                        <CardDescription className="line-clamp-2">
+                          {item.description}
+                        </CardDescription>
                       )}
-                      {job.status === "completed" && job.modelUrl && (
-                        <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => window.open(job.modelUrl!, '_blank')}>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="outline">{getCategoryName(item.categoryId)}</Badge>
+                        <Badge variant={item.available ? "default" : "secondary"}>
+                          {item.available ? "Available" : "Unavailable"}
+                        </Badge>
+                        {/* Sample tags - you can add these to your schema later */}
+                        <Badge variant="outline" className="bg-green-500/10 text-green-700 dark:text-green-400">Veg</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-muted-foreground">
+                          {getRestaurantName(item.restaurantId)}
+                        </p>
+                        {get3DStatusBadge(item)}
+                      </div>
+                      {job && job.status === "processing" && (
+                        <div className="space-y-1">
+                          <Progress value={job.progress || 0} className="h-2" />
+                          <p className="text-xs text-muted-foreground">Generating 3D model...</p>
+                        </div>
+                      )}
+                      {(item3DStatus === "ready" && (job?.modelUrl || model3D?.modelUrl)) && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full" 
+                          onClick={() => {
+                            const modelUrl = job?.modelUrl || model3D?.modelUrl;
+                            if (modelUrl) view3DModel(modelUrl, item.name);
+                          }}
+                        >
                           <Eye className="h-4 w-4 mr-1" />
                           View 3D Model
                         </Button>
                       )}
-                    </div>
-                  )}
-                </CardContent>
-                <CardFooter className="flex flex-wrap gap-2">
-                  {!job && (
-                    <Button variant="default" size="sm" onClick={() => { setSelectedItem(item); setIs3DDialogOpen(true); }} data-testid={`button-generate-3d-${item.id}`}>
-                      <Sparkles className="h-4 w-4 mr-1" />
-                      Generate 3D
-                    </Button>
-                  )}
-                  <Button variant="ghost" size="sm" onClick={() => handleEdit(item)} data-testid={`button-edit-${item.id}`}>
-                    <Pencil className="h-4 w-4 mr-1" />
-                    Edit
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => { setSelectedItem(item); setIsDeleteOpen(true); }} data-testid={`button-delete-${item.id}`}>
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    Delete
-                  </Button>
-                </CardFooter>
-              </Card>
-            );
-          })}
+                    </CardContent>
+                    <CardFooter className="flex flex-wrap gap-2 pt-4">
+                      {item3DStatus === "none" && (
+                        <Button 
+                          variant="default" 
+                          size="sm" 
+                          onClick={() => { setSelectedItem(item); setIs3DDialogOpen(true); }} 
+                          data-testid={`button-generate-3d-${item.id}`}
+                          className="flex-1"
+                        >
+                          <Sparkles className="h-4 w-4 mr-1" />
+                          Generate 3D
+                        </Button>
+                      )}
+                      {item3DStatus === "processing" && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          disabled
+                          className="flex-1"
+                        >
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          Processing...
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="sm" onClick={() => handleEdit(item)} data-testid={`button-edit-${item.id}`}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => { setSelectedItem(item); setIsDeleteOpen(true); }} data-testid={`button-delete-${item.id}`}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
         </div>
       )}
 
@@ -502,7 +765,7 @@ export default function MenuItems() {
           <DialogHeader>
             <DialogTitle>Generate 3D Model</DialogTitle>
             <DialogDescription>
-              Upload 5 images from different angles of "{selectedItem?.name}" to generate a 3D model
+              Upload 1 image of "{selectedItem?.name}" to generate a 3D model
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -511,55 +774,47 @@ export default function MenuItems() {
                 ref={multiFileInputRef}
                 type="file"
                 accept="image/*"
-                multiple
-                onChange={handleMultiImageUpload}
+                onChange={handleImageUploadFor3D}
                 className="hidden"
               />
               <Button
                 variant="outline"
                 onClick={() => multiFileInputRef.current?.click()}
                 className="w-full"
-                disabled={uploadedImages.length >= 5}
+                disabled={!!uploadedImage}
               >
                 <Upload className="h-4 w-4 mr-2" />
-                Upload Images ({uploadedImages.length}/5)
+                {uploadedImage ? "Image Selected" : "Upload Image"}
               </Button>
             </div>
-            {uploadedImages.length > 0 && (
-              <div className="grid grid-cols-5 gap-2">
-                {uploadedImages.map((file, index) => (
-                  <div key={index} className="relative aspect-square">
-                    <img
-                      src={URL.createObjectURL(file)}
-                      alt={`Upload ${index + 1}`}
-                      className="w-full h-full object-cover rounded-md"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute -top-2 -right-2 h-6 w-6"
-                      onClick={() => removeImage(index)}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
-                {[...Array(5 - uploadedImages.length)].map((_, index) => (
-                  <div key={`empty-${index}`} className="aspect-square border-2 border-dashed border-muted rounded-md" />
-                ))}
+            {uploadedImage && (
+              <div className="relative aspect-square max-w-md mx-auto">
+                <img
+                  src={URL.createObjectURL(uploadedImage)}
+                  alt="Upload preview"
+                  className="w-full h-full object-cover rounded-md"
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  className="absolute -top-2 -right-2 h-6 w-6"
+                  onClick={removeImage}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
               </div>
             )}
-            {uploadedImages.length < 5 && (
+            {!uploadedImage && (
               <p className="text-sm text-muted-foreground text-center">
-                Please upload {5 - uploadedImages.length} more image{5 - uploadedImages.length !== 1 ? 's' : ''}
+                Please upload an image to generate the 3D model
               </p>
             )}
           </div>
           <DialogFooter>
             <Button
-              onClick={() => selectedItem && generate3DMutation.mutate({ menuItemId: selectedItem.id, images: uploadedImages })}
-              disabled={uploadedImages.length !== 5 || generate3DMutation.isPending}
+              onClick={() => selectedItem && uploadedImage && generate3DMutation.mutate({ menuItemId: selectedItem.id, image: uploadedImage })}
+              disabled={!uploadedImage || generate3DMutation.isPending}
               data-testid="button-start-generation"
             >
               <Sparkles className="h-4 w-4 mr-2" />
@@ -727,6 +982,37 @@ export default function MenuItems() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* 3D Model Viewer Dialog */}
+      <Dialog open={is3DViewerOpen} onOpenChange={setIs3DViewerOpen}>
+        <DialogContent className="max-w-4xl h-[90vh] p-0">
+          <DialogHeader className="p-6 pb-0">
+            <DialogTitle>{selectedItemName}</DialogTitle>
+            <DialogDescription>
+              Drag to rotate • Pinch to zoom • Two fingers to pan
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 p-6 pt-4">
+            {selected3DModel && (
+              <model-viewer
+                src={selected3DModel}
+                alt={selectedItemName}
+                auto-rotate
+                camera-controls
+                shadow-intensity="1"
+                exposure="1"
+                style={{ width: '100%', height: '100%', minHeight: '500px' }}
+                data-testid="model-viewer"
+              />
+            )}
+          </div>
+          <div className="p-6 pt-0 flex justify-end">
+            <Button onClick={() => setIs3DViewerOpen(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

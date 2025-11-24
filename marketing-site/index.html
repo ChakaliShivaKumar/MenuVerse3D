@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Tech-Menu - Turn Your Restaurant Dishes Into Stunning 3D Digital Menus</title>
+    <meta name="description" content="Transform your restaurant menu with AI-powered 3D models. Create stunning digital menus that work on any device.">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Model Viewer for 3D preview -->
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-white text-gray-900 antialiased">
+    
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full bg-white/80 backdrop-blur-md z-50 border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                        3D Tech-Menu
+                    </span>
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#features" class="text-gray-700 hover:text-blue-600 transition-colors">Features</a>
+                    <a href="#how-it-works" class="text-gray-700 hover:text-blue-600 transition-colors">How It Works</a>
+                    <a href="#demo" class="text-gray-700 hover:text-blue-600 transition-colors">Demo</a>
+                    <a href="#pricing" class="text-gray-700 hover:text-blue-600 transition-colors">Pricing</a>
+                    <a href="#early-access" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        Join Early Access
+                    </a>
+                </div>
+                <button class="md:hidden text-gray-700" id="mobile-menu-btn">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+        <!-- Mobile Menu -->
+        <div class="hidden md:hidden bg-white border-t border-gray-200" id="mobile-menu">
+            <div class="px-4 py-4 space-y-3">
+                <a href="#features" class="block text-gray-700 hover:text-blue-600">Features</a>
+                <a href="#how-it-works" class="block text-gray-700 hover:text-blue-600">How It Works</a>
+                <a href="#demo" class="block text-gray-700 hover:text-blue-600">Demo</a>
+                <a href="#pricing" class="block text-gray-700 hover:text-blue-600">Pricing</a>
+                <a href="#early-access" class="block bg-blue-600 text-white px-4 py-2 rounded-lg text-center">Join Early Access</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="pt-24 pb-16 md:pt-32 md:pb-24 bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <!-- Left: Text Content -->
+                <div class="text-center md:text-left">
+                    <h1 class="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                        3D Tech-Menu
+                    </h1>
+                    <p class="text-xl md:text-2xl text-gray-700 mb-8 leading-relaxed">
+                        Turn your restaurant dishes into stunning 3D digital menus.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+                        <button id="view-demo-btn" class="bg-blue-600 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:bg-blue-700 transform hover:scale-105 transition-all shadow-lg hover:shadow-xl">
+                            View Demo
+                        </button>
+                        <a href="#early-access" class="bg-white text-blue-600 px-8 py-4 rounded-xl text-lg font-semibold border-2 border-blue-600 hover:bg-blue-50 transform hover:scale-105 transition-all shadow-lg hover:shadow-xl">
+                            Join Early Access
+                        </a>
+                    </div>
+                </div>
+                <!-- Right: 3D Preview Block -->
+                <div class="flex justify-center md:justify-end">
+                    <div class="w-full max-w-md h-96 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl shadow-2xl flex items-center justify-center border-4 border-white overflow-hidden">
+                        <!-- 3D Model Viewer -->
+                        <model-viewer 
+                            id="hero-model-viewer"
+                            src="assets/demo-model.glb" 
+                            alt="3D Tech-Menu Demo Model"
+                            auto-rotate 
+                            camera-controls
+                            ar
+                            ar-modes="webxr scene-viewer quick-look"
+                            shadow-intensity="1"
+                            exposure="1"
+                            environment-image="neutral"
+                            loading="auto"
+                            reveal="auto"
+                            style="width: 100%; height: 100%; background-color: transparent;">
+                            <div slot="poster" class="poster-content">
+                                <div class="text-center text-gray-500">
+                                    <i class="fas fa-cube text-6xl mb-4 animate-pulse"></i>
+                                    <p class="text-lg">Loading 3D Model...</p>
+                                </div>
+                            </div>
+                        </model-viewer>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold mb-4 text-gray-900">Powerful Features</h2>
+                <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+                    Everything you need to create and share stunning 3D menus
+                </p>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="bg-gradient-to-br from-blue-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-2 border border-gray-100">
+                    <div class="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-magic text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 text-gray-900">AI 3D Generation from Photos</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Upload 5 photos of your dish and watch our AI create a stunning 3D model automatically.
+                    </p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="bg-gradient-to-br from-purple-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-2 border border-gray-100">
+                    <div class="w-16 h-16 bg-purple-600 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-link text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 text-gray-900">Modern Digital Menu Link</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Get a shareable link to your beautiful 3D menu that works on any device, anywhere.
+                    </p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="bg-gradient-to-br from-green-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-2 border border-gray-100">
+                    <div class="w-16 h-16 bg-green-600 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-qrcode text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 text-gray-900">Scan via QR Code</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Generate QR codes for easy access. Customers scan and explore your menu in 3D instantly.
+                    </p>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="bg-gradient-to-br from-orange-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-2 border border-gray-100">
+                    <div class="w-16 h-16 bg-orange-600 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-mobile-alt text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 text-gray-900">Works on Any Device</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Responsive design ensures your 3D menu looks perfect on phones, tablets, and desktops.
+                    </p>
+                </div>
+
+                <!-- Feature 5 -->
+                <div class="bg-gradient-to-br from-red-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-2 border border-gray-100">
+                    <div class="w-16 h-16 bg-red-600 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-bolt text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 text-gray-900">Lightning Fast CDN Delivery</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Global CDN ensures your 3D models load instantly, no matter where your customers are.
+                    </p>
+                </div>
+
+                <!-- Feature 6 -->
+                <div class="bg-gradient-to-br from-indigo-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-2 border border-gray-100">
+                    <div class="w-16 h-16 bg-indigo-600 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-rocket text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 text-gray-900">Future-Proof Restaurant Technology</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Stay ahead with cutting-edge 3D technology that sets your restaurant apart from the competition.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold mb-4 text-gray-900">How It Works</h2>
+                <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+                    Create your 3D menu in three simple steps
+                </p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Step 1 -->
+                <div class="text-center">
+                    <div class="relative mb-8">
+                        <div class="w-32 h-32 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full mx-auto flex items-center justify-center shadow-xl">
+                            <i class="fas fa-cloud-upload-alt text-white text-5xl"></i>
+                        </div>
+                        <div class="absolute -top-2 -right-2 w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center text-2xl font-bold text-gray-900 shadow-lg">
+                            1
+                        </div>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 text-gray-900">Upload 5 Photos</h3>
+                    <p class="text-gray-600 leading-relaxed max-w-sm mx-auto">
+                        Simply upload 5 high-quality photos of your dish from different angles. Our system will handle the rest.
+                    </p>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="text-center">
+                    <div class="relative mb-8">
+                        <div class="w-32 h-32 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full mx-auto flex items-center justify-center shadow-xl">
+                            <i class="fas fa-brain text-white text-5xl"></i>
+                        </div>
+                        <div class="absolute -top-2 -right-2 w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center text-2xl font-bold text-gray-900 shadow-lg">
+                            2
+                        </div>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 text-gray-900">AI Generates 3D Model</h3>
+                    <p class="text-gray-600 leading-relaxed max-w-sm mx-auto">
+                        Our advanced AI processes your photos and creates a photorealistic 3D model in minutes.
+                    </p>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="text-center">
+                    <div class="relative mb-8">
+                        <div class="w-32 h-32 bg-gradient-to-br from-green-500 to-green-600 rounded-full mx-auto flex items-center justify-center shadow-xl">
+                            <i class="fas fa-share-alt text-white text-5xl"></i>
+                        </div>
+                        <div class="absolute -top-2 -right-2 w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center text-2xl font-bold text-gray-900 shadow-lg">
+                            3
+                        </div>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 text-gray-900">Share Your Digital Menu Link</h3>
+                    <p class="text-gray-600 leading-relaxed max-w-sm mx-auto">
+                        Get your unique menu link and QR code. Share it with customers and watch them explore your dishes in 3D.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Section -->
+    <section id="demo" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold mb-4 text-gray-900">See It In Action</h2>
+                <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+                    Experience the power of 3D menus with our interactive demo
+                </p>
+            </div>
+            <div class="max-w-4xl mx-auto">
+                <div class="bg-gradient-to-br from-gray-50 to-white rounded-3xl shadow-2xl p-8 md:p-12 border-4 border-gray-100">
+                    <div class="aspect-square bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl mb-6 overflow-hidden border-2 border-gray-300">
+                        <!-- 3D Model Viewer -->
+                        <model-viewer 
+                            id="demo-model-viewer"
+                            src="assets/demo-model.glb" 
+                            alt="3D Tech-Menu Interactive Demo"
+                            auto-rotate 
+                            camera-controls
+                            ar
+                            ar-modes="webxr scene-viewer quick-look"
+                            shadow-intensity="1"
+                            exposure="1"
+                            environment-image="neutral"
+                            interaction-prompt="auto"
+                            interaction-prompt-threshold="2000"
+                            loading="auto"
+                            reveal="auto"
+                            style="width: 100%; height: 100%; background-color: transparent;">
+                            <div slot="poster" class="poster-content">
+                                <div class="text-center text-gray-500">
+                                    <i class="fas fa-cube text-8xl mb-4 animate-pulse opacity-50"></i>
+                                    <p class="text-xl font-semibold">Loading 3D Model...</p>
+                                </div>
+                            </div>
+                        </model-viewer>
+                    </div>
+                    <div class="text-center">
+                        <button id="try-demo-btn" class="bg-blue-600 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:bg-blue-700 transform hover:scale-105 transition-all shadow-lg hover:shadow-xl">
+                            Try Demo
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="py-20 bg-gradient-to-br from-blue-50 to-purple-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold mb-4 text-gray-900">Pricing</h2>
+                <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+                    Simple, transparent pricing for restaurants of all sizes
+                </p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <!-- Free Plan -->
+                <div class="bg-white rounded-2xl shadow-lg p-8 border-2 border-gray-200 hover:border-blue-500 transition-all transform hover:-translate-y-2">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold mb-2 text-gray-900">Free</h3>
+                        <div class="text-4xl font-bold text-gray-900 mb-2">$0</div>
+                        <p class="text-gray-600">Perfect for trying out</p>
+                    </div>
+                    <div class="space-y-4 mb-8">
+                        <div class="flex items-center text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            <span>1 Menu</span>
+                        </div>
+                        <div class="flex items-center text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            <span>5 Dishes</span>
+                        </div>
+                        <div class="flex items-center text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            <span>Basic Support</span>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <span class="inline-block bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold">
+                            Coming Soon
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Pro Plan -->
+                <div class="bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl shadow-2xl p-8 border-4 border-white transform scale-105 hover:scale-110 transition-all">
+                    <div class="text-center mb-8">
+                        <div class="inline-block bg-yellow-400 text-gray-900 px-3 py-1 rounded-full text-sm font-bold mb-4">
+                            POPULAR
+                        </div>
+                        <h3 class="text-2xl font-bold mb-2 text-white">Pro</h3>
+                        <div class="text-4xl font-bold text-white mb-2">$29</div>
+                        <p class="text-blue-100">per month</p>
+                    </div>
+                    <div class="space-y-4 mb-8">
+                        <div class="flex items-center text-white">
+                            <i class="fas fa-check text-yellow-300 mr-3"></i>
+                            <span>Unlimited Menus</span>
+                        </div>
+                        <div class="flex items-center text-white">
+                            <i class="fas fa-check text-yellow-300 mr-3"></i>
+                            <span>Unlimited Dishes</span>
+                        </div>
+                        <div class="flex items-center text-white">
+                            <i class="fas fa-check text-yellow-300 mr-3"></i>
+                            <span>Priority Support</span>
+                        </div>
+                        <div class="flex items-center text-white">
+                            <i class="fas fa-check text-yellow-300 mr-3"></i>
+                            <span>Custom Branding</span>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <span class="inline-block bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold">
+                            Coming Soon
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Enterprise Plan -->
+                <div class="bg-white rounded-2xl shadow-lg p-8 border-2 border-gray-200 hover:border-purple-500 transition-all transform hover:-translate-y-2">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold mb-2 text-gray-900">Enterprise</h3>
+                        <div class="text-4xl font-bold text-gray-900 mb-2">Custom</div>
+                        <p class="text-gray-600">For large operations</p>
+                    </div>
+                    <div class="space-y-4 mb-8">
+                        <div class="flex items-center text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            <span>Everything in Pro</span>
+                        </div>
+                        <div class="flex items-center text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            <span>Dedicated Support</span>
+                        </div>
+                        <div class="flex items-center text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            <span>API Access</span>
+                        </div>
+                        <div class="flex items-center text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            <span>Custom Integrations</span>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <span class="inline-block bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold">
+                            Coming Soon
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Early Access CTA Section -->
+    <section id="early-access" class="py-20 bg-gradient-to-br from-blue-600 to-purple-600">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl md:text-5xl font-bold mb-4 text-white">Join Early Access</h2>
+                <p class="text-xl text-blue-100 max-w-2xl mx-auto">
+                    Be among the first to transform your restaurant menu with 3D technology
+                </p>
+            </div>
+            <div class="bg-white rounded-2xl shadow-2xl p-8 md:p-12">
+                <form id="early-access-form" class="space-y-6">
+                    <div>
+                        <label for="restaurant-name" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Restaurant Name
+                        </label>
+                        <input 
+                            type="text" 
+                            id="restaurant-name" 
+                            name="restaurant-name" 
+                            required
+                            class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-600 focus:outline-none transition-colors text-lg"
+                            placeholder="Enter your restaurant name"
+                        >
+                    </div>
+                    <div>
+                        <label for="email" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Email Address
+                        </label>
+                        <input 
+                            type="email" 
+                            id="email" 
+                            name="email" 
+                            required
+                            class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-600 focus:outline-none transition-colors text-lg"
+                            placeholder="your@email.com"
+                        >
+                    </div>
+                    <button 
+                        type="submit"
+                        class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:from-blue-700 hover:to-purple-700 transform hover:scale-105 transition-all shadow-lg hover:shadow-xl"
+                    >
+                        Get Early Access
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-300 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-3 gap-8 mb-8">
+                <div>
+                    <h3 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-4">
+                        3D Tech-Menu
+                    </h3>
+                    <p class="text-gray-400">
+                        Transforming restaurant menus with cutting-edge 3D technology.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold text-white mb-4">Quick Links</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#features" class="hover:text-blue-400 transition-colors">Features</a></li>
+                        <li><a href="#how-it-works" class="hover:text-blue-400 transition-colors">How It Works</a></li>
+                        <li><a href="#demo" class="hover:text-blue-400 transition-colors">Demo</a></li>
+                        <li><a href="#pricing" class="hover:text-blue-400 transition-colors">Pricing</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold text-white mb-4">Contact</h4>
+                    <p class="mb-4">
+                        <a href="mailto:hello@3dtechmenu.com" class="hover:text-blue-400 transition-colors">
+                            <i class="fas fa-envelope mr-2"></i>hello@3dtechmenu.com
+                        </a>
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors">
+                            <i class="fab fa-facebook"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors">
+                            <i class="fab fa-linkedin"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 pt-8 text-center">
+                <p class="text-gray-400">
+                    &copy; 2025 3D Tech-Menu. All Rights Reserved.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="script.js"></script>
+</body>
+</html>

@@ -5,6 +5,10 @@ import { type Server } from "node:http";
 import { nanoid } from "nanoid";
 import { type Express } from "express";
 import { createServer as createViteServer, createLogger } from "vite";
+import { config } from "dotenv";
+
+// Load environment variables from .env.local
+config({ path: path.resolve(import.meta.dirname, "..", ".env.local") });
 
 import viteConfig from "../vite.config";
 import runApp from "./app";

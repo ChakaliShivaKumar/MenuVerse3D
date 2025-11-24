@@ -20,6 +20,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 
 export interface IStorage {
   // Restaurants
@@ -134,7 +135,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getMenuItemsByRestaurant(restaurantId: string): Promise<MenuItem[]> {
-    return await db.select().from(menuItems).where(eq(menuItems.restaurantId, restaurantId));
+    const items = await db.select().from(menuItems).where(eq(menuItems.restaurantId, restaurantId));
+    
+    // Fetch 3D models for each menu item
+    const itemsWithModels = await Promise.all(
+      items.map(async (item) => {
+        const model = await this.get3DModel(item.id);
+        return {
+          ...item,
+          model3D: model || null,
+        };
+      })
+    );
+    
+    return itemsWithModels as any;
   }
 
   async getMenuItem(id: string): Promise<MenuItem | undefined> {

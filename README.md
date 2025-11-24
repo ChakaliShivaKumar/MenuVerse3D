@@ -37,7 +37,9 @@ A cutting-edge SaaS platform for restaurants to create AI-powered digital menus 
 - **Express.js** - Fast, minimalist web framework
 - **TypeScript** - Type-safe JavaScript
 - **Drizzle ORM** - Type-safe SQL query builder
-- **PostgreSQL** - Reliable relational database via Neon
+- **PostgreSQL** - Reliable relational database via Neon (direct connection)
+  - **Alternative:** Neon Data API available at `https://ep-hidden-bread-a41i9aap.apirest.us-east-1.aws.neon.tech/neondb/rest/v1`
+  - See `DATABASE_OPTIONS.md` for details
 - **Multer** - File upload handling
 - **Replicate API** - AI-powered 3D model generation
 - **QRCode.js** - QR code generation
@@ -86,7 +88,7 @@ A cutting-edge SaaS platform for restaurants to create AI-powered digital menus 
    npm run dev
    ```
 
-   The application will be available at `http://localhost:5000`
+   The application will be available at `http://localhost:3030`
 
 ## Project Structure
 
